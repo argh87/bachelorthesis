@@ -1,0 +1,24 @@
+\section{WBS Alarm}
+\label{sec:wbs}
+
+WBS Alarm ist ein Warenbestandssystem, das für die freiwillige Feuerwehr in Eschenstruth im Laufe des Studiums Sozialinformatik entwickelt wurde. Die Software entstand aus dem Bedürfnis, einen Überblick über den aktuellen Bestand an Kleidung und ihrer Verteilung zu schaffen. Dies wurde zuvor auf externen Datenträgern wie Tafeln, Zetteln und als Microsoft Excel Tabelle auf einem USB Stick verteilt. Diese Variante war auf Dauer von den Mitgliedern der Feuerwehr nicht mehr zu handhaben, da die Informationen mit der Zeit auseinandergeflossen sind und der Überblick schwand. Daher sollte eine Software entwickelt werden, die diesen Missstand aufhebt. Über einen Zeitraum von zwei Jahren wurde das Projekt abgeschlossen und ist mittlerweile in einem produktiven Zustand. 
+
+Im Wesentlichen wird in WBS Alarm ein Träger der freiwilligen Feuerwehr verwaltet. Im Beispiel von Eschenstruth wäre dies die Gemeinde Helsa. Unter dem Träger werden die Anwender, Zielorte und Kleidungsstücke verwaltet. Bei der Anlage eines Trägers werden vier Zielorte angelegt: Wareneingang, Lager, Wäscherei und Aussonderung. Der Wareneingang hat als Sonderstellung keine verwaltbaren Bestände, da alle Einkäufe darüber gebucht werden. Der Wareneingang selbst steht aber nicht als Zielort für Buchungen zur Verfügung. Es steht den Administrator*innen die Option offen, in WBS Alarm eigene Wareneingänge zu erstellen. Somit könnten Lieferanten abgebildet werden. Die Wäscherei ist aus der Anforderungsanalyse mit der freiwilligen Feuerwehr entstanden.
+
+Die Transaktionserfassung ist der zentrale Punkt der Software und stellt als komplexesten Teil den Kern des Systems dar. Die Anforderungen an eine Transaktion werden wie folgt definiert: 
+
+\begin{itemize}
+\item Ein Anwender kann nur für seinen eigenen Träger eine Transaktion erfassen.
+\item Eine Transaktion hat immer genau einen Ursprungsort und einen Zielort.
+\item Der Ursprungsort und der Zielort müssen unterschiedlich sein.
+\item Der Urspungsort und der Zielort gehören zum Träger des Anwenders.
+\item Eine Transaktion umfasst mindestens eine Position. 
+\item Eine Position besteht aus einem Kleidungsstück und dessen Anzahl.
+\item Ein Kleidungsstück darf nur in einer Position pro Transaktion vermerkt sein.
+\item Das verbuchte Kleidungsstück ist im Ursprungsort in der gewünschten Anzahl vorhanden --- dies gilt sofern es sich beim Ursprungsort nicht um den Wareneingang handelt, über den neue Kleidungsstücke aufgenommen werden. 
+\item An den Wareneingang darf nicht gebucht werden.
+\item Die Orte müssen für die Erfassung gesperrt sein, \dah ein Ort, dessen Bestand durch einen administrativen Anwender initial erfasst worden ist, muss für weitere Änderungen gesperrt werden. Somit wird eine Manipulation der Bestandswerte vermieden. Wenn bei einer Inventur Missstände festgestellt werden, muss eine Korrektur über die Buchungsschnittstelle erfolgen.
+\end{itemize}
+
+Diese Anforderungen muss eine Transaktion erfüllen, um in WBS Alarm verbucht zu werden.
+

@@ -1,0 +1,18 @@
+digraph D {
+
+
+  subgraph cluster_gc_1 {
+    label = "Comp A";
+    A;
+    S;
+  }
+  subgraph cluster_gc_2 {
+    label = "Comp B";
+    B;
+  }
+  
+  A -> S [arrowhead="vee"]
+  B -> S [arrowhead="onormal"]
+  A -> B [style=dashed, arrowhead="vee"]
+
+} 

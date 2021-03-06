@@ -1,0 +1,19 @@
+@startuml
+package action {
+class AddEinkaufActionImpl
+class GetTransaktionActionImpl
+class GetTransaktionListActionImpl
+class TransaktionDtoImpl
+interface AddTransaktionAction
+interface AddEinkaufAction
+interface GetTransaktionAction
+interface GetTransaktionListAction
+}
+
+
+AddEinkaufAction <|-- AddEinkaufActionImpl
+AddEinkaufActionImpl ..> TransaktionDtoImpl
+AddEinkaufAction *--> AddTransaktionAction
+GetTransaktionAction <|-- GetTransaktionActionImpl
+GetTransaktionListAction <|-- GetTransaktionListActionImpl
+@enduml

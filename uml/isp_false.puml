@@ -1,0 +1,15 @@
+@startuml
+class User1
+class User2
+class User3
+class OPS {
+ + op1()
+ + op2()
+ + op3()
+}
+User1 -[hidden] User2
+User2 -[hidden] User3
+User1 --> OPS : ops1()
+User2 --> OPS : ops2()
+User3 --> OPS : ops3()
+@enduml

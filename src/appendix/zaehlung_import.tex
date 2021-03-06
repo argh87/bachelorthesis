@@ -1,0 +1,78 @@
+\chapter{Tabellen $F_i$/$F_o$ Zählung}
+\markboth{C. Tabellen $F_i$/$F_o$ Zählung}{}
+\label{ch:Zaehlung}
+
+\begin{table}[]
+\centering
+\caption{Zählung der \code{import}-Anweisungen in den Modulen der einzelnen Komponenten über das Gesamtsystem WBS Alarm.}
+\label{tab:import_all_fifo}
+\begin{tabular}{@{}l|rrrrrrr|r@{}}
+\toprule
+                   & \code{action} & \code{core} & \code{entity} & \code{http} & \code{repository} & \code{security} & \code{service} & $F_o$ \\ \midrule
+                   
+\code{action}      & -   & 246 & 25  & 0   & 59  & 10  & 35  & 375 \\
+\code{core}        & 0   & -   & 0   & 0   & 0   & 0   & 0   & 0   \\
+\code{entity}      & 0   & 26  & -   & 0   & 0   & 0   & 0   & 26  \\
+\code{http}        & 38  & 142 & 0   & -   & 0   & 1   & 0   & 181 \\
+\code{repository}  & 0   & 10  & 11  & 0   & -   & 0   & 0   & 21  \\
+\code{security}    & 6   & 39  & 3   & 1   & 1   & -   & 0   & 50  \\
+\code{service}     & 0   & 6   & 0   & 0   & 1   & 0   & -   & 7   \\ \midrule
+$F_i$              & 44  & 469 & 39  & 1   & 61  & 11  & 35  &     \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+
+\begin{table}[]
+\centering
+\caption{Zählung der \code{import}-Anweisungen in den Modulen der einzelnen Komponenten über die Transaktionserfassung von WBS Alarm.}
+\label{tab:import_trans_fifo}
+\begin{tabular}{@{}l|rrrrrr|r@{}}
+\toprule
+                   & \code{action} & \code{core} & \code{entity} & \code{http} & \code{repository}  & \code{service} & $F_o$ \\ \midrule
+                   
+\code{action}      & -   & 60  & 13  & 0   & 14  & 5   & 92  \\
+\code{core}        & 0   & -   & 0   & 0   & 0   & 0   & 0   \\
+\code{entity}      & 0   & 23  & -   & 0   & 0   & 0   & 23  \\
+\code{http}        & 4   & 18  & 0   & -   & 0   & 0   & 22  \\
+\code{repository}  & 0   & 5   & 5   & 0   & -   & 0   & 10  \\
+\code{service}     & 0   & 6   & 0   & 0   & 1   & -   & 7   \\ \midrule
+$F_i$              & 4   & 112 & 18  & 0   & 15  & 5   &     \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+
+\begin{table}[]
+\centering
+\caption{Zählung der \code{import}-Anweisungen in den Modulen der einzelnen Komponenten über die Transaktionserfassung von WBS Alarm nach der Restrukturierung.}
+\label{tab:import_trans_fifo_refac}
+\begin{tabular}{@{}l|rrrrrr|r@{}}
+\toprule
+                   & \code{action} & \code{core} & \code{entity} & \code{http} & \code{repository}  & \code{mail} & $F_o$ \\ \midrule
+                   
+\code{action}      & -   & 62  & 13  & 0   & 0   & 0   & 75  \\
+\code{core}        & 0   & -   & 0   & 0   & 0   & 0   & 0   \\
+\code{entity}      & 0   & 23  & -   & 0   & 0   & 0   & 23  \\
+\code{http}        & 4   & 18  & 0   & -   & 0   & 0   & 22  \\
+\code{repository}  & 1   & 9   & 6   & 0   & -   & 0   & 16  \\
+\code{mail}        & 2   & 2   & 0   & 0   & 0   & -   & 4   \\ \midrule
+$F_i$              & 7   & 114 & 19  & 0   & 0   & 0   &     \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+
+\clearpage
+
+
+
+
+
+
+
+
+
+
+
+

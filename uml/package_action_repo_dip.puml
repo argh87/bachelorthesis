@@ -1,0 +1,30 @@
+@startuml
+package action {
+interface TransactionDao
+}
+
+package repository {
+class TransactionDaoImpl
+interface AccessRepository
+interface TransaktionsRepository
+interface BenutzerRepository
+interface GroesseRepository
+interface BestandRepository
+interface ZielortRepository
+interface AccessRepository
+}
+
+TransactionDaoImpl -|> TransactionDao 
+TransactionDaoImpl *-> AccessRepository
+TransactionDaoImpl *-> TransaktionsRepository
+TransactionDaoImpl *-> BenutzerRepository
+TransactionDaoImpl *-> GroesseRepository
+TransactionDaoImpl *-> BestandRepository
+TransactionDaoImpl *-> ZielortRepository
+
+AccessRepository        --[hidden] TransaktionsRepository
+TransaktionsRepository  --[hidden] BenutzerRepository
+BenutzerRepository      --[hidden] GroesseRepository
+GroesseRepository       --[hidden] BestandRepository
+BestandRepository       --[hidden] ZielortRepository
+@enduml

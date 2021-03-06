@@ -1,0 +1,14 @@
+@startuml
+package action {
+interface MailService
+interface Mail
+}
+
+
+package mail {
+class MailServiceImpl
+}
+
+MailServiceImpl --|> MailService
+MailServiceImpl ..> Mail  
+@enduml

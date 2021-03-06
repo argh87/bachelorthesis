@@ -1,0 +1,168 @@
+
+\subsection{Designprinzipien}
+\label{sec:Designprinzipien}
+
+Wartbare und erweiterbare Software beginnt mit Quellcode ohne \textit{Cruft}, ohne schlecht designten und unnötig komplizierten Quellcode. Um solchen Quellcode zu vermeiden, gibt es die Designprinzipien unter dem Akronym \textit{SOLID}. Diese und Weitere wurden in den 1980er im USENET entwickelt. Anfang 2000 wurden die fünf Prinzipien gebündelt und erhielten durch Michael Feathers ihr heutiges Acronym \citep[vgl.][58]{martin2018}.
+
+Das Ziel ist, dass die Designprinzipien Änderungen am Quelltext zulassen, sie einfach zu verstehen sind und dass sie die Basis der Komponenten bilden. Sie sollen die Datenstrukturen und Funktionen miteinander verbinden und finden Anwendung in der mittelschichtigen Modulentwicklung \citep[vgl.][58]{martin2018}.
+
+%\textquote[{\cite[][58]{martin2018}}]{The SOLID principles tell us how to arrange our functions and data structures into classes, and how those classes should be interconnected. The use of the word “class” does not imply that these principles are applicable only to object-oriented software. A class is simply a coupled grouping of functions and data. Every software system has such groupings, whether they are called classes or not. The SOLID principles apply to those groupings. The goal of the principles is the creation of mid-level software structures that:
+%• Tolerate change,
+%• Are easy to understand, and
+%• Are the basis of components that can be used in many software systems. 
+%The term “mid-level” refers to the fact that these principles are applied by programmers working at the module level. They are applied just above the level of the code and help to define the kinds of software structures used within modules and components.
+%The history of the SOLID principles is long. I began to assemble them in the late 1980s while debating software design principles with others on USENET (an early kind of Facebook). Over the years, the principles have shifted and changed. Some were deleted. Others were merged. Still others were added. The final grouping stabilized in the early 2000s, although I presented them in a different order. In 2004 or thereabouts, Michael Feathers sent me an email saying that if I rearranged the principles, their first words would spell the word SOLID—and thus the SOLID principles were born.}
+
+Das Akronym \textit{SOLID} besteht aus folgenden Designprinzipien:
+
+\begin{itemize}
+\item SRP: Single Responsibility Principle
+\item OCP: Open-Closed Principle
+\item LSP: Liskov Substitution Principle
+\item ISP: Interface Segregation Principle
+\item DIP: Dependency Inversion Principle
+\end{itemize}
+
+Sie werden in den folgenden Kapiteln kurz beschreiben und erläutert.
+
+%\textquote[{\cite[][59]{martin2018}}]{
+%SRP: The Single Responsibility Principle
+%An active corollary to Conway’s law: The best structure for a software system is heavily influenced by the social structure of the organization that uses it so that each software module has one, and only one, reason to change.
+%• OCP: The Open-Closed Principle
+%Bertrand Meyer made this principle famous in the 1980s. The gist is that for software systems to be easy to change, they must be designed to allow the behavior of those systems to be changed by adding new code, rather than changing existing code.
+%• LSP: The Liskov Substitution Principle
+%Barbara Liskov’s famous definition of subtypes, from 1988. In short, this principle says that to build software systems from interchangeable parts, those parts must adhere to a contract that allows those parts to be substituted one for another.
+%• ISP: The Interface Segregation Principle
+%This principle advises software designers to avoid depending on things that they don’t use. 
+%• DIP: The Dependency Inversion Principle
+%The code that implements high-level policy should not depend on the code that implements low-level details. Rather, details should depend on policies.}
+
+
+%SOLID -> besteht aus den unten gelisteten, auf L und I wird verichtet, da sie für eine Restrukturierung der Transaktionserfassung nicht benötigt wird.
+
+%Was hat \citep{Noback2018} dazu gesagt?
+
+
+\subsubsection{SRP: Single Responsibility Principle}
+
+Das \ac{SRP} geht auf das Gesetz von Conway zurück, was besagt: 
+\textquote[{\cite[][31]{conway1968}}]{[...] organizations which design systems [...] are constrained to produce designs which are copies of the communication structures of these organizations.}. Das bedeutet, dass die logische Struktur von Software sich an der Organisation und deren Struktur und Sprachgebrauch orientiert und sie kopiert.
+
+Das \ac{SRP} besagt, dass es nur einen Grund geben sollte ein Modul zu ändern. Dieses Modul sollte nur für einen einzigen Akteur verantwortlich sein. Unter Modul kann hier eine Datei verstanden werden (im Java Umfeld wäre dies \zb eine Klasse), unter der ein Satz kohärenter Funktionen und Datenstrukturen gesammelt wird \citep[][62]{martin2018}. 
+
+Ein Beispiel für einen Verstoß gegen das \ac{SRP} kann anhand folgendem Beispiel veranschaulicht werden: \refAbbns{fig:srp_false} zeigt eine Klasse, die eine DVD repräsentiert. Eine DVD enthält Informationen über den Titel des Films und wann dieser veröffentlicht worden ist (\code{getDetails()}). Zudem kann eine DVD gespeichert werden (\code{save()}). Es gibt zwei Akteure, die Interesse an der DVD haben. Einerseits der \textit{Cineast}, der Informationen über die DVD erhalten möchte, und andererseits der \textit{Admin}, der neue Filme erstellt oder an bestehenden Filmen fehlerhafte Daten korrigiert und diese speichert. Ergeben sich zeitgleich Änderungen an der Speicherung und den bereitgestellten Informationen, kann es zu Konflikten beim zusammenführen kommen. Das Modul \textit{DVD} hat in diesem Beispiel nicht die Verantwortlichkeit gegenüber einem einzigen Akteur.
+
+\begin{figure}
+  \centering
+  \includegraphics[width=.4\textwidth]{build/generated-uml/srp_false.png}
+   \caption{Das Modul \textit{DVD} wird von zwei Akteuren verwendet.}
+   \label{fig:srp_false}
+\end{figure}
+
+Das Problem kann gelöst werden, indem die Verantwortlichkeit gegenüber einem Akteur in verschiedene Module aufgeteilt wird (\refAbb{fig:srp_okay}). Die Module können getrennt voneinander weiterentwickelt werden.
+
+\begin{figure}
+  \centering
+  \includegraphics[width=.7\textwidth]{build/generated-uml/srp_okay.png}
+   \caption{Das Modul \textit{DVD} wird aufgeteilt. Die Details verbleiben in dem ursprünglichen Modul. Es wird ein eigenes Modul für die Speicherung einer \textit{DVD} erzeugt.}
+   \label{fig:srp_okay}
+\end{figure}
+
+
+\subsubsection{OCP: Open-Closed Principle}
+
+\textquote[{\cite[][57]{meyer1997}}]{Modules should be both open and closed.}. Mit dieser Formulierung wollte \citeauth{meyer1997} ausdrücken, dass ein Modul offen für Erweiterungen sein soll, aber geschlossen für Änderungen. Ein Modul, welches von anderen Modulen verwendet wird, soll nicht selbst geändert werden. Eher soll ein neues Modul erstellt werden, das vom alten Modul erbt und bestimmte Methoden oder Datenstrukturen ersetzt. \citeauth{meyer1997} weist aber darauf hin, dass dies eine Vorgehensweise für Module ist, die außerhalb des eigenen Zugriffsbereichs liegen. Wenn es sich um Fehler in eigenen Modulen handelt, dürfen und müssen diese entsprechend korrigiert werden \citep[vgl.][60\psq]{meyer1997}. 
+
+\begin{figure}
+  \centering
+  \includegraphics[width=.6\textwidth]{build/generated-uml/ocp_step_one.png}
+   \caption{Ausgangssituation vom Druck einer PDF.}
+   \label{fig:ocp_step_one}
+\end{figure}
+
+\begin{figure}
+  \centering
+  \includegraphics[width=.8\textwidth]{build/generated-uml/ocp_step_two.png}
+   \caption{Aufteilung in Komponenten und Module.}
+   \label{fig:ocp_step_two}
+\end{figure}
+
+\citeauth{martin2018} beschreibt das \ac{OCP} in ähnlicher Weise, geht aber noch einen Schritt weiter. Er verbindet das Prinzip mit dem \ac{DIP}. Die Kombination aus beiden Prinzipien erhält eine größere Signifikanz auf der Ebene architektonischer Komponenten \citep[vgl.][70]{martin2018}. In \refAbbns{fig:ocp_step_one} ist eine Struktur aufgebaut, die einen Export einer Filmdatenbank darstellt. Wenn diese um einen CSV Export erweitert werden soll, könnte einfach eine weitere Klasse erstellt werden, die den \code{MovieCollector} verwendet, um die Daten für die CSV Datei zu ermitteln. Das funktioniert bis sich der \code{MovieCollector} ändert. Ab diesen Zeitpunkt müssen drei Module angefasst werden: \code{MovieCollector}, \code{PdfExporter} und das neue Modul \code{CsvExporter}.
+
+Die Architektur sollte so gestaltet werden, dass Änderungen nur an einer Stelle erfolgen müssen und andere Module und Komponenten davon nicht betroffen sind. Eine Methode wäre, die Beziehungen umzudrehen und wie in \refAbbns{fig:ocp_step_two} in sich geschlossene Komponenten zu bilden (eine Komponente wird hier als UML Package dargestellt). Die \textit{Interfaces} bilden den Vertrag, den Module erfüllen müssen, um vom Modul verwendet werden zu können. Das \textit{Interface} \code{Exporter} gibt \zb an, wie der \code{Controller} die ermittelten Daten weitergeben muss um entweder ein CSV oder ein PDF zu erhalten. Beide Implementierungen müssen die Schnittstelle einhalten.
+
+Ein weiterer Vorteil dieser Aufteilung liegt in der Modularität. Eine Komponente kann schnell ausgetauscht werden. Wenn die Datenbank gegen eine andere ausgetauscht wird oder die Filmdaten in einer Datei gespeichert werden sollen, kann diese Komponente gewechselt werden. Die neue Komponente muss nur das \textit{Interface} \code{Repository} implementieren.
+
+\ac{OCP} hat das Ziel ein System so zu gestalten, dass Erweiterungen leicht eingearbeitet werden können und Modifikationen keinen hohen Einfluss auf andere Komponenten und Module haben. Komponenten auf höheren Ebenen sollen vor Änderungen von Komponenten auf niedrigeren Ebenen geschützt werden \citep[vgl.][75]{martin2018}
+
+
+\subsubsection{LSP: Liskov Substitution Principle}
+
+Das \ac{LSP} geht auf folgender Definition zurück: \textquote[{\cite[][25]{liskov1987}}]{If for each object $o_1$ of type $S$ there is an object $o_2$ of type $T$ such that for all programs $P$ defined in terms of $T$, the behavior of $P$ is unchanged when $o_1$ is substituted for $o_2$, then $S$ is a subtype of $T$.}
+
+In \refAbbns{fig:lsp_rec_square} ist ein Verstoß gegen die Substituierbarkeit  gegeben, da das Modul \code{User} seinen Quellcode ändern müsste, wenn es anstelle eines \code{Rectangle} ein \code{Square} verwendet wollte. Eine Möglichkeit, den Verstoß zu verhindern, wäre eine Erweiterung vom Modul \code{User}. Dieses Modul müsste \zb bei der Eingabe der Daten und der Berechnung der Fläche prüfen, ob es sich bei der Instanz um ein \code{Rectangle} oder \code{Square} handelt \citep[vgl.][79]{martin2018}.
+
+\begin{figure}
+  \centering
+  \includegraphics[width=.3\textwidth]{build/generated-uml/lsp_rec_square.png}
+   \caption{Problem der Substituierbarkeit von Rechteck zu Quadrat \citep[vgl.][79]{martin2018}.}
+   \label{fig:lsp_rec_square}
+\end{figure}
+
+\ac{LSP} sollte bei der Gestaltung und Ausarbeitung der Softwarearchitektur beachtet werden. Ein simpler Verstoß kann die Anzahl zusätzlichen Mechanismen, wie \zb der Instanzprüfung, erhöhen \citep[vgl.][82]{martin2018}.
+
+\subsubsection{ISP: Interface Segregation Principle}
+
+Um Abhängigkeiten von nicht genutzten Modulen zu vermeiden, wird das \ac{ISP} verwendet. In \refAbbns{fig:isp_false} verwenden verschiedene Benutzer unterschiedliche Methoden aus einem Modul \code{OPS}. Dadurch werden alle Benutzer voneinander abhängig. Wenn eine Änderung an \code{OPS} durchgeführt wird, müssen die verschiedenen Benutzer auch neu kompiliert werden.
+
+Dieses Problem kann vermieden werden, wenn die Operationen in einzelne Interfaces aufgeteilt werden (\refAbb{fig:isp_okay}). In diesem Fall wäre \code{User1} nur noch von \code{U1Ops} abhängig, aber nicht mehr zu \code{OPS} \citep[vgl.][85]{martin2018}.
+
+\begin{figure}
+  \centering
+  \includegraphics[width=.4\textwidth]{build/generated-uml/isp_false.png}
+   \caption{\code{User1} verwendet \code{OPS} und stellt damit eine indirekte Abhängigkeit zu \code{User2} und \code{User3} her \citep[vgl.][84]{martin2018}.}
+   \label{fig:isp_false}
+\end{figure}
+
+\begin{figure}
+  \centering
+  \includegraphics[width=.4\textwidth]{build/generated-uml/isp_okay.png}
+   \caption{Jeder Benutzer erhält eine Schnittstelle für seine Operation. \code{User1} ist nur noch von \code{U1Ops} abhängig, aber nicht mehr von \code{OPS} \citep[vgl.][85]{martin2018}.}
+   \label{fig:isp_okay}
+\end{figure}
+
+Dieses Prinzip kann auch bei Abhängigkeiten zu anderen Bibliotheken bedacht werden. Wenn ein System ein Framework nutzt, das eine bestimmte Datenbank  verwendet, kann folgendes passieren: Mit der Aktualisierung der Datenbank muss auch das Framework und \ggf in Abhängigkeit dazu das System selbst aktualisiert werden. Bei einer losen Kopplung nach \ac{ISP} wäre dies nicht der Fall \citep[vgl.][86]{martin2018}.
+
+\subsubsection{DIP: Dependency Inversion Principle}
+
+Das \ac{DIP} besagt, dass flexible Systeme nur auf Abstraktionen aber nicht auf Konkretionen verweisen sollen. Dies lässt sich nicht immer vermeiden und sollte daher nicht erzwungen werden. Hier muss in Betracht gezogen werden, ob ein Modul in sich stabil ist und selten bis gar nicht geändert wird (\zb in Java die Klasse \code{java.lang.String}). Abhängigkeiten zu volatilen Konkretionen hingegen sollten über eine stabile Abstraktion erfolgen.
+In Hinblick darauf lassen sich bestimmte Programmierpraktiken herleiten:
+\begin{itemize}
+\item Es sollen keine konkreten Module referenziert werden. 
+\item Es soll nicht von konkreten Modulen geerbt werden.
+\item Es sollen keine konkreten Methoden abstrakter Module überschrieben werden.
+\item Es sollen keine Namen von konkreten Modulen genannt werden.
+\end{itemize}
+Um unerwünschte Abhängigkeiten zu vermeiden, kann \zb das Design Pattern \textit{Abstract Factory} (\refAbb{fig:dip_factory}) betrachtet werden \citep[vgl.][87\psq]{martin2018}. 
+
+Die Aufteilung in \code{App} und \code{Comp} solle hier zwei verschiedene Komponenten darstellen. Das Klasse \code{Application} hat nur Schnittstellen in Abhängigkeit. Die Implementierungen befinden sich in einer anderen Komponente. Der einzige Verstoß gegen das \ac{DIP} ist der Verweis von \code{FactoryImpl} auf \code{ConcreteImpl}. Dieser lässt sich aber nicht vermeiden.
+
+\begin{figure}
+  \centering
+  \includegraphics[width=.6\textwidth]{build/generated-uml/dip_factory.png}
+   \caption{Angewandtes Design Pattern \textit{Abstract Factory} \citep[vgl.][90]{martin2018}.}
+   \label{fig:dip_factory}
+\end{figure}
+
+Abhängigkeiten können auch dann entstehen, wenn eine Anwendung \bspw eine Laufzeitumgebung benötigt, wie \zb ein \ac{JRE}. Bei der Auslieferung der Software muss darauf geachtet werden, dass auf dem Zielsystem \ggf kein \ac{JRE} installiert ist, oder es in einer falschen Version zur Verfügung steht. Dies sind grundsätzlich Risiken, die abgewägt werden müssen \citep[vgl.][]{schuchert2013}. 
+
+\ac{DIP} kann mit zwei weiteren Prinzipien kombiniert werden: \ac{DI} und \ac{IoC}. \ac{DI} bestimmt, wie Abhängigkeiten aufgelöst werden. Am Beispiel von einem Brettspiel: Der Spieler nimmt nicht die Würfel und rollt diese in seinem Zug, sondern das Spiel gibt dem Spieler die Würfel, wenn er am Zug ist. Mit welchen Würfeln gespielt wird, entscheidet das Spiel. Bei \ac{IoC} wird gesteuert, wer eine Nachricht initiiert. Ruft der Quellcode eine Methode aus dem Framework auf, oder ruft das Framework zurück? Wenn eine Anwendung auf das Framework zugreift, handelt es sich nicht um \ac{IoC}. Wenn ein Framework aber Quellcode der Anwendung aufruft, schon. Dies geht auf \textit{Hollywood's Law} zurück: \textquote[{\cite[][218]{sweet1985}}]{Don‘t call us, we’ll call you.}. Bei einem Brettspiel würde das Spiel die Interaktionen der Spieler orchestrieren und dessen Aktionen anfordern \citep[vgl.][]{schuchert2013}.
+
+Die Kombination dieser drei Prinzipien bietet viele Vorteile zur Strukturierung von Quellcode und der Vermeidung von ungewollten Abhängigkeiten. \ac{DIP} stellt hierfür die Struktur dar, während \ac{DI} für die Versorgung konkreter Module sorgt. Über \ac{IoC} kann eine Abhängigkeit durch \textit{Hollywood's Law} umgedreht werden.
+
+%In 2004, Martin Fowler published an article on Dependency Injection (DI) and Inversion of Control (IoC) . Is the DIP the same as DI, or IoC? No, but they play nice together. When Robert Martin first discussed the DIP, he equated it a first-class combination of the Open Closed Principle and the and the Liskov Substitution Principle, important enough to warrant its own name. Here's a synopsis of all three terms using some examples: \citep[vgl.][]{schuchert2013}
+
+%DI is about how one object acquires a dependency. When a dependency is provided externally, then the system is using DI. IoC is about who initiates the call. If your code initiates a call, it is not IoC, if the container/system/library calls back into code that you provided it, is it IoC. \citep[vgl.][]{schuchert2013}
+
+%DIP, on the other hand, is about the level of the abstraction in the messages sent from your code to the thing it is calling. To be sure, using DI or IoC with DIP tends to be more expressive, powerful and domain-aligned, but they are about different dimensions, or forces, in an overall problem. DI is about wiring, IoC is about direction, and DIP is about shape. \citep[vgl.][]{schuchert2013}
+

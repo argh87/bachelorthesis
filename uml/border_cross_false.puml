@@ -1,0 +1,16 @@
+@startuml
+package Business {
+  class Client
+}
+
+package DB {
+  class Repository {
+    + get()
+  }
+  class Data
+}
+
+Client -> Repository
+Client -> Data
+Repository --> Data
+@enduml

@@ -1,0 +1,52 @@
+\subsection{Grenzlinien und "=überschreitungen}
+\label{sec:grenzen}
+
+Grenzen verlaufen im Groben zwischen den Schichten, wie bereits in \refAbbns{fig:clean_architecture} schematisch dargestellt. Es wird versucht Grenzen zwischen Dingen zu ziehen, die wichtig sind oder nur Details darstellen. Die Oberfläche ist nicht abhängig von den Geschäftsregeln und für die Datenbank spielen sie ebenso keine Rolle. Dementsprechend sollte eine Grenze gezogen werden, wie \zb in \refAbbns{fig:border_gui_br_db} dargestellt \citep[vgl.][165\psq]{martin2018}. Die Oberfläche und die Datenbank sind hier ein Detail des Systems. Ob eine \textit{MySql}, \textit{Oracle} oder \textit{PostgreSQL} als Datenbank verwendet wird oder die Daten im Dateisystem gespeichert werden, ist für die Geschäftsregeln unerheblich. Es wird lediglich eine Schnittstelle angeboten, über die Daten an eine Komponente gegeben werden. Welche Komponente dies ist, kann auf einen späteren Zeitpunkt verschoben werden. Das Gleiche gilt für das \ac{GUI}. Ob nun eine REST-Schnittstelle\footnote{Representational State Transfer} oder direkt eine Benutzeroberfläche für \textit{Windows} oder eine Applikation für \textit{Android} erstellt wird, ist auch für die Geschäftsregeln nicht wichtig. Sie stehen im Kern des Systems. 
+
+\begin{figure}
+  \centering
+  \includegraphics[width=.5\textwidth]{build/generated-uml/border_gui_br_db.png}
+   \caption{Die Geschäftsregeln werden von den Komponenten \code{GUI} und \code{DB} verwendet. Jede Komponente ist für sich autark.}
+   \label{fig:border_gui_br_db}
+\end{figure}
+
+% was wird abgegrenzt
+%You draw lines between things that matter and things that don’t. The GUI doesn’t matter to the business rules, so there should be a line between them. The database doesn’t matter to the GUI, so there should be a line between them. The database doesn’t matter to the business rules, so there should be a line between them \citep[vgl.][165\psq]{martin2018}.
+
+Ein weiterer Punkt ist, dass Grenzen dort gezogen werden, wo sich Änderungen aus unterschiedlichen Gründen ergeben \citep[vgl.][173]{martin2018}.
+
+%Boundaries are drawn where there is an axis of change. The components on one side of the boundary change at different rates, and for different reasons, than the components on the other side of the boundary \citep[vgl.][173]{martin2018}.
+
+% was ist Kontrollfluss?
+
+
+%At the lower right of the diagram in Figure 22.1 is an example of how we cross the circle boundaries. It shows the controllers and presenters communicating with the use cases in the next layer. Note the flow of control: It begins in the controller, moves through the use case, and then winds up executing in the presenter. Note also the source code dependencies: Each points inward toward the use cases. We usually resolve this apparent contradiction by using the Dependency Inversion Principle. In a language like Java, for example, we would arrange interfaces and inheritance relationships such that the source code dependencies oppose the flow of control at just the right points across the boundary \citep[vgl.][206]{martin2018}.
+
+
+Zur Laufzeit ist eine Grenzüberschreitung nur eine Funktion, die auf der anderen Seite einer Grenze eine andere Funktion über eine Schnittstelle aufruft. Hierbei muss nur darauf geachtet werden, wie die Abhängigkeiten verwaltet werden \citep[vgl.][176]{martin2018}.
+
+%At runtime, a boundary crossing is nothing more than a function on one side of the boundary calling a function on the other side and passing along some data. The trick to creating an appropriate boundary crossing is t´o manage the source code dependencies  \citep[vgl.][176]{martin2018}.
+
+In \refAbbns{fig:border_cross_false} wird eine Grenzüberschreitung dargestellt, die in eine falsche Richtung verläuft. Der Kontrollfluss geht hier von einer niedrigen Schicht in eine höhere Schicht. Um dies zu vermeiden, kann Polymorphie genutzt werden (\refAbb{fig:border_cross_okay}). Hier ruft die höhere Schicht die niedrigere auf. Auch zu bemerken ist, dass das Modul \code{Data} sich auf der aufgerufenen Seite befindet \citep[vgl.][178]{martin2018}.
+
+%In Figure 18.2, the flow of control crosses the boundary from left to right as before. The high-level Client calls the f() function of the lower-level ServiceImpl through the Service interface. Note, however, that all dependencies cross the boundary from right to left toward the higher-level component. Note, also, that the definition of the data structure is on the calling side of the boundary  \citep[vgl.][177\psq]{martin2018}.
+
+\begin{figure}
+  \centering
+  \includegraphics[width=.4\textwidth]{build/generated-uml/border_cross_false.png}
+   \caption{Grenzüberschreitung aus einer inneren Schicht (\code{Business}) zu einer äußeren (\code{DB}).}
+   \label{fig:border_cross_false}
+\end{figure}
+
+\begin{figure}
+  \centering
+  \includegraphics[width=.6\textwidth]{build/generated-uml/border_cross_okay.png}
+   \caption{Umkehr der Abhängigkeit durch Verwendung von Schnittstellen. Die äußere Schicht (\code{DB}) verwendet die innere Schicht (\code{Business}).}
+   \label{fig:border_cross_okay}
+\end{figure}
+
+Hochrangige Abhängigkeiten und Komponenten sollten als \textit{Plugin} gesehen werden. Sie werden bei Bedarf hinzugenommen, wirken sich aber nicht auf die Geschäftsregeln aus und haben auch keinerlei internes Wissen über die Geschäftsregeln \citep[vgl.][181]{martin2018}.
+
+%Lower-level services should “plug in” to higher-level services. The source code of higher-level services must not contain any specific physical knowledge (e.g., a URI) of any lower-level service \citep[vgl.][181]{martin2018}.
+
+Die Aufteilung in Komponenten kann teuer sein, wenn \zb in Java für jede Komponente eine eigene \code{.jar}-Datei erstellt wird. Hierfür gibt es partielle Grenzen, die auf eine Separierung in verschiedene \code{.jar}-Dateien verzichtet und die Grenzen virtuell zieht. Der Umfang des Quellcodes nimmt hierbei nicht ab \citep[vgl.][218]{martin2018}. 

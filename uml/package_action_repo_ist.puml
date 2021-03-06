@@ -1,0 +1,22 @@
+@startuml
+package action {
+class TransaktionContext
+}
+
+
+package repository {
+interface BenutzerRepository
+interface GroesseRepository
+interface BestandRepository
+interface ZielortRepository
+}
+
+TransaktionContext *-> BenutzerRepository  
+TransaktionContext *-> GroesseRepository  
+TransaktionContext *-> BestandRepository  
+TransaktionContext *-> ZielortRepository  
+
+BenutzerRepository      --[hidden] GroesseRepository
+GroesseRepository       --[hidden] BestandRepository
+BestandRepository       --[hidden] ZielortRepository
+@enduml

@@ -1,0 +1,526 @@
+\chapter{Bestehender Quellcode}
+\markboth{A. Bestehender Quellcode}{}
+\label{ch:Quellcode}
+
+Im Folgenden wird der vor der Bearbeitung und Optimierung bestehende Quellcode aufgelistet, der im direkten Zusammenhang mit der Transaktionserfassung steht. Der vollständige Quellcode befindet sich im Git-Repository von WBS Alarm als Release\footnote{\url{https://github.com/argh87/de.hs-fulda.et.it.project/releases/tag/1.0}} mit der Version 1.0.
+
+\begin{lstlisting}[caption={Schnittstelle der Aktion zur Erfassung einer Transaktion.}, label={lst:AddTransaktionAction}]
+package de.hsfulda.et.wbs.action.transaktion;
+import de.hsfulda.et.wbs.core.WbsUser;
+import de.hsfulda.et.wbs.core.data.TransaktionData;
+import de.hsfulda.et.wbs.core.dto.TransaktionDto;
+public interface AddTransaktionAction {
+  TransaktionData perform(WbsUser user, TransaktionDto dto);
+}
+\end{lstlisting}
+
+\begin{lstlisting}[caption={Implementierung der Aktion zum Erfassen der Transaktion.}, label={lst:AddTransaktionActionImpl}]
+package de.hsfulda.et.wbs.action.transaktion.impl;
+import de.hsfulda.et.wbs.action.transaktion.AddTransaktionAction;
+import de.hsfulda.et.wbs.core.WbsUser;
+import de.hsfulda.et.wbs.core.data.TransaktionData;
+import de.hsfulda.et.wbs.core.dto.TransaktionDto;
+import de.hsfulda.et.wbs.entity.Transaktion;
+import de.hsfulda.et.wbs.repository.TransaktionRepository;
+import de.hsfulda.et.wbs.service.AccessService;
+import org.springframework.stereotype.Component;
+import javax.transaction.Transactional;
+@Transactional
+@Component
+public class AddTransaktionActionImpl implements AddTransaktionAction {
+  private final TransaktionValidaton validation;
+  private final TransaktionExecution execution;
+  private final TransaktionRepository transaktionen;
+  private final TransaktionMailService transaktionMailService;
+  private final AccessService accessService;
+  public AddTransaktionActionImpl(TransaktionValidaton validation, TransaktionExecution execution,
+      TransaktionRepository transaktionen, TransaktionMailService transaktionMailService,
+      AccessService accessService) {
+    this.validation = validation;
+    this.execution = execution;
+    this.transaktionen = transaktionen;
+    this.transaktionMailService = transaktionMailService;
+    this.accessService = accessService;
+  }
+  @Override
+  public TransaktionData perform(WbsUser user, TransaktionDto dto) {
+    return accessService.hasAccessOnTransaktion(user, dto, () -> {
+      validation.validateTransaktionDto(dto);
+      Transaktion transaktion = execution.createTransaktion(user, dto);
+      transaktionMailService.sendMail(user, dto);
+      return transaktionen.save(transaktion);
+    });
+  }
+}
+\end{lstlisting}
+
+\begin{lstlisting}[caption={Validierung der übergebenen Daten einer Transaktion.}, label={lst:TransaktionValidaton}]
+package de.hsfulda.et.wbs.action.transaktion.impl;
+import de.hsfulda.et.wbs.core.data.BestandData;
+import de.hsfulda.et.wbs.core.data.GroesseData;
+import de.hsfulda.et.wbs.core.data.KategorieData;
+import de.hsfulda.et.wbs.core.data.ZielortData;
+import de.hsfulda.et.wbs.core.dto.PositionDto;
+import de.hsfulda.et.wbs.core.dto.TransaktionDto;
+import de.hsfulda.et.wbs.core.exception.ResourceNotFoundException;
+import de.hsfulda.et.wbs.core.exception.TransaktionValidationException;
+import org.springframework.stereotype.Component;
+import java.util.Collections;
+import java.util.List;
+import java.util.Objects;
+import java.util.Set;
+import java.util.stream.Collectors;
+@Component
+class TransaktionValidaton {
+  private final TransaktionContext context;
+  TransaktionValidaton(TransaktionContext context) {
+    this.context = context;
+  }
+  /**
+   * Die Transaktion wird an dieser Stelle validiert. Dabei wird geprüft ob die beiden Zielorte dem gleichen Träger
+   * zugeordnet sind. Desweiteren wird geprüft, ob die Zielorte und die Größen existieren. Dabei ist zu beachten,
+   * dass Zielorte und Größen aktiv sind. Auf inaktive darf nicht gebucht werden. Hierbei wird ein 404 ausgelöst über
+   * die {@link ResourceNotFoundException}. Die Erfassung der Bestände muss zudem abgeschlossen sein. Dazu wird
+   * geprüft, ob genug Bestand im ausgehenden Zielort vorhanden ist. Es wird zudem geprüft, ob mindestens eine
+   * Position ind er Transaktion angegeben wurde. Gleiche Größen (und die dazugehörige Kategorie) darf nicht in
+   * verschiendenen Positionen auftauchen.
+   *
+   * @param dto Übergebene Daten einer Transaktion.
+   */
+  void validateTransaktionDto(TransaktionDto dto) {
+    ZielortData vonZielort = context.getZielortData(dto.getVon());
+    ZielortData nachZielort = context.getZielortData(dto.getNach());
+    if (!hasSameTraeger(vonZielort, nachZielort)) {
+      throw new TransaktionValidationException("Die Zielorte {0} und {1} besitzen nicht den gleichen Träger.",
+          vonZielort.getName(), nachZielort.getName());
+    }
+    // Ausgehender Zielort erfasst?
+    if (!vonZielort.isErfasst()) {
+      throw new TransaktionValidationException(
+          "Der Zielort \"{0}\" muss in der Erfassung der Bestände abgeschlossen sein. " +
+              "Bitte wenden Sie sich an ihren Systembetreuer.", vonZielort.getName());
+    }
+    // Zielort erfasst?
+    if (!nachZielort.isErfasst()) {
+      throw new TransaktionValidationException(
+          "Der Zielort \"{0}\" muss in der Erfassung der Bestände abgeschlossen sein. " +
+              "Bitte wenden Sie sich an ihren Systembetreuer.", nachZielort.getName());
+    }
+    // Zielort ist nicht der Wareneingang
+    if (nachZielort.isEingang()) {
+      throw new TransaktionValidationException(
+          "Der Zielort \"{0}\" ist als Wareneingang definiert. Dieser kann nicht als Zielort angegeben " +
+              "werden.", nachZielort.getName());
+    }
+    // Es wurde mindestens eine Position angegeben.
+    List<PositionDto> positions = dto.getPositions();
+    if (positions.isEmpty()) {
+      throw new TransaktionValidationException("Es muss mindestens eine Position angegeben werden.");
+    }
+    Set<Long> duplicates = getDuplicateGroesse(positions);
+    if (!duplicates.isEmpty()) {
+      throw new TransaktionValidationException(
+          "Die Größe mit der/den ID/s {0} wurde in den Positionen doppelt angegeben.", duplicates);
+    }
+    // Der Wareneingang in den Beständen nicht aktualisiert.
+    if (!vonZielort.isEingang()) {
+      // Existiert genug Bestand für eine Position
+      positions.forEach(p -> {
+        BestandData bestand = context.getBestandData(vonZielort.getId(), p.getGroesse());
+        GroesseData groesse = context.getGroesseData(p.getGroesse());
+
+        if (bestand.getAnzahl() < p.getAnzahl()) {
+          KategorieData kategorie = groesse.getKategorie();
+          throw new TransaktionValidationException(
+              "Die Position mit Kategorie \"{0}\", Größe \"{1}\", Anzahl {2} übersteigt den " +
+                  "Bestand vom ausgehenden Zielort {3}.", kategorie.getName(), groesse.getName(),
+              p.getAnzahl(), vonZielort.getName());
+        }
+      });
+    }
+  }
+  private static Set<Long> getDuplicateGroesse(List<PositionDto> positions) {
+    List<Long> numbers = positions.stream()
+        .map(PositionDto::getGroesse)
+        .collect(Collectors.toList());
+    return numbers.stream()
+        .filter(i -> Collections.frequency(numbers, i) > 1)
+        .collect(Collectors.toSet());
+  }
+  private boolean hasSameTraeger(ZielortData von, ZielortData nach) {
+    return Objects.equals(von.getTraeger(), nach.getTraeger());
+  }
+}
+\end{lstlisting}
+
+\begin{lstlisting}[caption={Speicherung einer neuen Transaktion.}, label={lst:TransaktionExecution}]
+package de.hsfulda.et.wbs.action.transaktion.impl;
+import de.hsfulda.et.wbs.core.WbsUser;
+import de.hsfulda.et.wbs.core.data.BestandData;
+import de.hsfulda.et.wbs.core.dto.PositionDto;
+import de.hsfulda.et.wbs.core.dto.TransaktionDto;
+import de.hsfulda.et.wbs.core.exception.ResourceNotFoundException;
+import de.hsfulda.et.wbs.entity.Bestand;
+import de.hsfulda.et.wbs.entity.Position;
+import de.hsfulda.et.wbs.entity.Transaktion;
+import de.hsfulda.et.wbs.entity.Zielort;
+import org.springframework.stereotype.Component;
+import java.time.LocalDateTime;
+import java.util.Optional;
+@Component
+class TransaktionExecution {
+  private final TransaktionContext context;
+  private final CreateBestandForTransaktion createBestand;
+  private final UpdateBestandForTransaktion updateBestand;
+  TransaktionExecution(TransaktionContext context, CreateBestandForTransaktion createBestand,
+             UpdateBestandForTransaktion updateBestand) {
+    this.context = context;
+    this.createBestand = createBestand;
+    this.updateBestand = updateBestand;
+  }
+  Transaktion createTransaktion(WbsUser user, TransaktionDto dto) {
+    Zielort vonZielort = context.getZielort(dto.getVon());
+    Transaktion.TransaktionBuilder builder = Transaktion.builder()
+        .setBenutzer(context.getBenutzer(user))
+        .setDatum(LocalDateTime.now())
+        .setVon(vonZielort)
+        .setNach(context.getZielort(dto.getNach()));
+    dto.getPositions()
+        .forEach(p -> {
+          builder.addPosition(Position.builder()
+              .setAnzahl(p.getAnzahl())
+              .setGroesse(context.getGroesse(p.getGroesse()))
+              .build());
+
+          // Der Wareneingang soll nicht gebucht werden.
+          if (!vonZielort.isEingang()) {
+            updateVonBestand(p, dto.getVon());
+          }
+          updateNachBestand(p, dto.getNach());
+        });
+
+    return builder.build();
+  }
+  /**
+   * Ermittelt den Bestand vom Ausgangsort und aktualisiert den Bestand indem die Anzahl der Position abgezogen wird.
+   * Wenn Bestand nicht existiert, wird ein Fehler geworfen.
+   *
+   * @param position Position, die verarbeitet wird.
+   * @param von      Zielort von dem eine Bestandteil an einen anderen Zielort übergeben werden soll.
+   */
+  private void updateVonBestand(PositionDto position, Long von) {
+    Optional<Bestand> vonBestand = context.getBestand(von, position.getGroesse());
+    if (!vonBestand.isPresent()) {
+      throw new ResourceNotFoundException(
+          "Es gibt keinen Bestand von dem die eine Position nicht abgebucht werden kann.");
+    }
+
+    substractAnzahl(position, vonBestand.get());
+  }
+  /**
+   * Aktualisieren der Anzahl indem die in der Position übergebene Anzahl abgezogen wird.
+   *
+   * @param position Position, die verarbeitet wird.
+   * @param bestand  Zu aktualisierender Bestand.
+   */
+  private void substractAnzahl(PositionDto position, Bestand bestand) {
+    updateBestand.perform(bestand.getId(), () -> bestand.getAnzahl() - position.getAnzahl());
+  }
+  /**
+   * Aktualisiert den Bestand des Zielorts an den eine Position abgegeben wird. Existiert noch kein Bestand beim
+   * Zielort wird dieser erstellt und mit keinem Bestand initialisiert. danach wird die Anzahl der aktuellen
+   * Position dem Bestand hinzugerechnet.
+   *
+   * @param position Position, die verarbeitet wird.
+   * @param nach     Zielort, an den die Position geht.
+   */
+  private void updateNachBestand(PositionDto position, Long nach) {
+    Bestand nachBestand = getNachBestand(position, nach);
+    addAnzahl(position, nachBestand);
+  }
+  /**
+   * Ermittelt den Bestand anhan des Zielorts und der Position. Sollte der Bestand nciht existieren wird er angelegt.
+   *
+   * @param position Position, die verarbeitet wird.
+   * @param nach     Zielort, an den die Position geht.
+   * @return Persitierter Bestand.
+   */
+  private Bestand getNachBestand(PositionDto position, Long nach) {
+    Optional<Bestand> nachBestand = context.getBestand(nach, position.getGroesse());
+    if (!nachBestand.isPresent()) {
+      BestandData created = createBestand.perform(nach, BestandCreateDtoImpl.of(position));
+      return context.getBestand(created.getId());
+    }
+    return nachBestand.get();
+  }
+  /**
+   * Aktualisieren der Anzahl indem die in der Position übergebene Anzahl hinzugefügt wird.
+   *
+   * @param position Position, die verarbeitet wird.
+   * @param bestand  Zu aktualisierender Bestand.
+   */
+  private void addAnzahl(PositionDto position, Bestand bestand) {
+    updateBestand.perform(bestand.getId(), () -> bestand.getAnzahl() + position.getAnzahl());
+  }
+}
+\end{lstlisting}
+
+\begin{lstlisting}[caption={Kontext und Abstraktion der Daten für die Erfassung von Transaktionen.}, label={lst:TransaktionContext}]
+package de.hsfulda.et.wbs.action.transaktion.impl;
+import de.hsfulda.et.wbs.core.WbsUser;
+import de.hsfulda.et.wbs.core.data.BestandData;
+import de.hsfulda.et.wbs.core.data.GroesseData;
+import de.hsfulda.et.wbs.core.data.ZielortData;
+import de.hsfulda.et.wbs.core.exception.ResourceNotFoundException;
+import de.hsfulda.et.wbs.core.exception.TransaktionValidationException;
+import de.hsfulda.et.wbs.entity.Benutzer;
+import de.hsfulda.et.wbs.entity.Bestand;
+import de.hsfulda.et.wbs.entity.Groesse;
+import de.hsfulda.et.wbs.entity.Zielort;
+import de.hsfulda.et.wbs.repository.BenutzerRepository;
+import de.hsfulda.et.wbs.repository.BestandRepository;
+import de.hsfulda.et.wbs.repository.GroesseRepository;
+import de.hsfulda.et.wbs.repository.ZielortRepository;
+import org.springframework.stereotype.Component;
+import java.util.Optional;
+@Component
+class TransaktionContext {
+  private final BenutzerRepository benutzer;
+  private final GroesseRepository groessen;
+  private final BestandRepository bestaende;
+  private final ZielortRepository zielorte;
+  private TransaktionContext(BenutzerRepository benutzer, GroesseRepository groessen, BestandRepository bestaende,
+      ZielortRepository zielorte) {
+    this.benutzer = benutzer;
+    this.groessen = groessen;
+    this.bestaende = bestaende;
+    this.zielorte = zielorte;
+  }
+  Benutzer getBenutzer(WbsUser user) {
+    Optional<Benutzer> managed = benutzer.findById(user.getId());
+    return managed.orElseThrow(
+        () -> new ResourceNotFoundException("Benutzer mit ID {0} nicht gefunden.", user.getId()));
+  }
+  ZielortData getZielortData(Long id) {
+    Optional<ZielortData> managed = findZielortByIdAndAktivIsTrue(id);
+    return managed.orElseThrow(() -> new ResourceNotFoundException("Zielort mit ID {0} nicht gefunden.", id));
+  }
+  Zielort getZielort(Long id) {
+    Optional<Zielort> managed = zielorte.findById(id);
+    return managed.orElseThrow(() -> new ResourceNotFoundException("Zielort mit ID {0} nicht gefunden.", id));
+  }
+  private Optional<ZielortData> findZielortByIdAndAktivIsTrue(Long id) {
+    return zielorte.findByIdAndAktivIsTrue(id);
+  }
+  GroesseData getGroesseData(Long id) {
+    Optional<GroesseData> managed = findGroesseByIdAndAktivIsTrue(id);
+    return managed.orElseThrow(() -> new ResourceNotFoundException("Groesse mit ID {0} nicht gefunden.", id));
+  }
+  Groesse getGroesse(Long id) {
+    Optional<Groesse> managed = groessen.findById(id);
+    return managed.orElseThrow(() -> new ResourceNotFoundException("Groesse mit ID {0} nicht gefunden.", id));
+  }
+  private Optional<GroesseData> findGroesseByIdAndAktivIsTrue(Long id) {
+    return groessen.findByIdAndAktivIsTrue(id);
+  }
+  BestandData getBestandData(Long zielortId, Long groesseId) {
+    Optional<BestandData> managed = findBestandByZielortIdAndGroesseId(zielortId, groesseId);
+    return managed.orElseThrow(
+        () -> new TransaktionValidationException("Für den Zielort {0} wurde kein Bestand gefunden (Größe {1}).",
+            zielortId, groesseId));
+  }
+  Optional<Bestand> getBestand(Long zielortId, Long groesseId) {
+    return bestaende.findByZielortIdAndGroesseId(zielortId, groesseId);
+  }
+  Bestand getBestand(Long bestandId) {
+    Optional<Bestand> managed = bestaende.findById(bestandId);
+    return managed.orElseThrow(
+        () -> new ResourceNotFoundException("Bestand mit ID {0} nicht gefunden.", bestandId));
+  }
+  private Optional<BestandData> findBestandByZielortIdAndGroesseId(Long zielortId, Long groesseId) {
+    return bestaende.findByZielortIdAndGroesseIdAsData(zielortId, groesseId);
+  }
+}
+\end{lstlisting}
+
+\begin{lstlisting}[caption={Repository in Stil von Spring für die Verwaltung von Transaktionen.}, label={lst:TransaktionRepository}]
+package de.hsfulda.et.wbs.repository;
+import de.hsfulda.et.wbs.core.data.TransaktionData;
+import de.hsfulda.et.wbs.entity.Transaktion;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.CrudRepository;
+import org.springframework.data.repository.query.Param;
+import java.util.List;
+import java.util.Optional;
+public interface TransaktionRepository extends CrudRepository<Transaktion, Long> {
+  @Query("SELECT t FROM Transaktion t")
+  List<TransaktionData> findAllAsData();
+  @Query("SELECT t FROM Transaktion t where t.id = :id")
+  Optional<TransaktionData> findByIdAsData(@Param("id") Long id);
+  @Query("SELECT t FROM Transaktion t JOIN t.von v JOIN v.traeger s where s.id = :traegerId ORDER BY t.datum DESC")
+  Page<TransaktionData> findAllAsDataByTraegerId(@Param("traegerId") Long traegerId, Pageable pageable);
+}
+\end{lstlisting}
+
+\begin{lstlisting}[caption={Repository im Stil von \textit{Spring Boot Data} für die Zugriffsprüfung.}, label={lst:AccessRepository}]
+package de.hsfulda.et.wbs.repository;
+import de.hsfulda.et.wbs.entity.Traeger;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.Repository;
+import org.springframework.data.repository.query.Param;
+public interface AccessRepository extends Repository<Traeger, Long> {
+  // ...
+  @Query("SELECT COUNT(t) FROM Traeger t JOIN t.benutzer b JOIN t.zielorte z where b.id = :userId and z.id = :zielortId")
+  Long findTraegerByUserAndZielortId(@Param("userId") Long userID, @Param("zielortId") Long zielortId);
+  @Query("SELECT COUNT(t) FROM Traeger t JOIN t.benutzer b JOIN t.kategorien k JOIN k.groessen g where b.id = :userId and g.id = :groesseId")
+  Long findTraegerByUserAndGroesseId(@Param("userId") Long userID, @Param("groesseId") Long groesseId);
+  // ...
+}
+\end{lstlisting}
+
+\begin{lstlisting}[caption={Serviceklasse für die Zugriffsprüfung.}, label={lst:AccessService}]
+package de.hsfulda.et.wbs.service;
+import de.hsfulda.et.wbs.core.WbsUser;
+import de.hsfulda.et.wbs.core.dto.TransaktionDto;
+import de.hsfulda.et.wbs.core.exception.ResourceNotFoundException;
+import de.hsfulda.et.wbs.repository.AccessRepository;
+import org.springframework.stereotype.Service;
+import java.util.function.Supplier;
+@Service
+public class AccessService {
+  private final AccessRepository repo;
+  public AccessService(AccessRepository repo) {
+    this.repo = repo;
+  }
+  //...
+  public <T> T hasAccessOnTransaktion(WbsUser user, Long transaktionId, final Supplier<T> supplier) {
+    Long counts = repo.findTraegerByUserAndTransaktionId(user.getId(), transaktionId);
+    return evaluteCount(counts, transaktionId, "Transaktion", supplier);
+  }
+  public <T> T hasAccessOnTransaktion(WbsUser user, TransaktionDto dto, final Supplier<T> supplier) {
+    checkCount(repo.findTraegerByUserAndZielortId(user.getId(), dto.getVon()), dto.getVon(), "Zielort");
+    checkCount(repo.findTraegerByUserAndZielortId(user.getId(), dto.getNach()), dto.getNach(), "Zielort");
+    dto.getPositions()
+        .forEach(p -> {
+          checkCount(repo.findTraegerByUserAndGroesseId(user.getId(), p.getGroesse()), p.getGroesse(), "Größe");
+        });
+    return supplier.get();
+  }
+  private void checkCount(final Long counts, final Long id, final String resource) {
+    if (counts == 0) {
+      throw new ResourceNotFoundException("{1} mit ID {0} nicht gefunden.", id, resource);
+    }
+  }
+  private <T> T evaluteCount(final Long counts, final Long id, final String resource, final Supplier<T> supplier) {
+    checkCount(counts, id, resource);
+    return supplier.get();
+  }
+}
+\end{lstlisting}
+
+\begin{lstlisting}[caption={Serviceklasse für das Versenden von E-Mails.}, label={lst:MailService}]
+package de.hsfulda.et.wbs.service;
+import de.hsfulda.et.wbs.core.Mail;
+import de.hsfulda.et.wbs.core.exception.MailConnectionException;
+import de.hsfulda.et.wbs.core.exception.MailDeliveryException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.mail.MailSendException;
+import org.springframework.mail.javamail.JavaMailSender;
+import org.springframework.mail.javamail.MimeMessageHelper;
+import org.springframework.stereotype.Service;
+import javax.mail.MessagingException;
+import javax.mail.internet.InternetAddress;
+import javax.mail.internet.MimeMessage;
+import java.io.UnsupportedEncodingException;
+@Service
+public class MailService {
+  private static final Logger LOGGER = LoggerFactory.getLogger(MailService.class);
+  @Value("${wbs.mail.active}")
+  private boolean active;
+  @Value("${spring.mail.username}")
+  private String fromMailAdress;
+  @Value("${wbs.mail.personal}")
+  private String fromMailPersonal;
+  private final JavaMailSender mailSender;
+  public MailService(JavaMailSender mailSender) {
+    this.mailSender = mailSender;
+  }
+  public void send(Mail mail) throws MailConnectionException {
+    if (!active) {
+      return;
+    }
+    try {
+      MimeMessage message = mailSender.createMimeMessage();
+      MimeMessageHelper helper = new MimeMessageHelper(message);
+      helper.setSubject(mail.getSubject());
+      helper.setFrom(new InternetAddress(fromMailAdress, fromMailPersonal));
+      helper.setTo(mail.getTo());
+      helper.setText(mail.getText());
+      LOGGER.debug("Sending E-Mail \"{}\" to {} ", mail.getSubject(), String.join(", ", mail.getTo()));
+      mailSender.send(message);
+
+      LOGGER.info("Send E-Mail \"{}\" to {} ", mail.getSubject(), String.join(", ", mail.getTo()));
+    } catch (MessagingException | UnsupportedEncodingException e) {
+      throw new MailDeliveryException(e, "Beim Senden der Mail {0} ist ein Fehler aufgetreten", mail.toString());
+    } catch (MailSendException e) {
+      throw new MailConnectionException();
+    }
+  }
+}
+\end{lstlisting}
+
+\begin{lstlisting}[caption={Modul für die allgemeine Verarbeitung von Ausnahmen.}, label={lst:ExceptionMapper}]
+package de.hsfulda.et.wbs.http.resource;
+import de.hsfulda.et.wbs.core.HalJsonResource;
+import de.hsfulda.et.wbs.core.WbsUser;
+import de.hsfulda.et.wbs.core.exception.MailDeliveryException;
+import de.hsfulda.et.wbs.core.exception.ResourceNotFoundException;
+import de.hsfulda.et.wbs.core.exception.TransaktionValidationException;
+import de.hsfulda.et.wbs.core.exception.ZielortLockedException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.web.bind.annotation.ControllerAdvice;
+import org.springframework.web.bind.annotation.ExceptionHandler;
+@ControllerAdvice
+public class ExceptionMapper {
+  private static final Logger LOGGER = LoggerFactory.getLogger(ExceptionMapper.class);
+  @ExceptionHandler({ResourceNotFoundException.class})
+  public final ResponseEntity<HalJsonResource> resourceNotFoundException(Throwable exc) {
+    return toResponse(HttpStatus.NOT_FOUND, exc);
+  }
+  @ExceptionHandler({IllegalStateException.class, MailDeliveryException.class})
+  public final ResponseEntity<HalJsonResource> illegalStateException(@AuthenticationPrincipal WbsUser user,
+      Throwable exc) {
+    LOGGER.error("Unerwarteter Fehler durch {}", user.getUsername());
+    LOGGER.error(exc.getMessage(), exc);
+    return toResponse(HttpStatus.INTERNAL_SERVER_ERROR, exc);
+  }
+  @ExceptionHandler({IllegalArgumentException.class})
+  public final ResponseEntity<HalJsonResource> illegalArgumentException(Throwable exc) {
+    return toResponse(HttpStatus.BAD_REQUEST, exc);
+  }
+  //...
+  @ExceptionHandler(ZielortLockedException.class)
+  public final ResponseEntity<HalJsonResource> zielortLockedException(Throwable exc) {
+    return toResponse(HttpStatus.LOCKED, exc);
+  }
+  @ExceptionHandler(TransaktionValidationException.class)
+  public final ResponseEntity<HalJsonResource> transaktionValidationException(Throwable exc) {
+    return toResponse(HttpStatus.BAD_REQUEST, exc);
+  }
+  private ResponseEntity<HalJsonResource> toResponse(HttpStatus status, Throwable exc) {
+    HalJsonResource message = new HalJsonResource();
+    message.addProperty("message", exc.getMessage());
+    return new ResponseEntity<>(message, status);
+  }
+}
+\end{lstlisting}
+
+

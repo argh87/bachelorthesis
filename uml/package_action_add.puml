@@ -1,0 +1,26 @@
+@startuml
+package action {
+class AddTransaktionActionImpl
+class BestandCreateDtoImpl
+class CreateBestandForTransaktion
+class TransaktionContext
+class TransaktionExecution
+class TransaktionMailService
+class TransaktionValidaton
+class UpdateBestandForTransaktion
+interface AddTransaktionAction
+}
+
+AddTransaktionAction <|-- AddTransaktionActionImpl
+AddTransaktionActionImpl *--> TransaktionValidaton
+AddTransaktionActionImpl *--> TransaktionExecution
+AddTransaktionActionImpl *--> TransaktionMailService
+
+
+TransaktionValidaton *--> TransaktionContext
+TransaktionExecution *--> TransaktionContext
+TransaktionExecution ..> BestandCreateDtoImpl
+TransaktionExecution *--> CreateBestandForTransaktion
+TransaktionExecution *--> UpdateBestandForTransaktion
+TransaktionMailService *--> TransaktionContext
+@enduml

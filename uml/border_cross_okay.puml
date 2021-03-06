@@ -1,0 +1,25 @@
+@startuml
+package Business {
+  class Client
+  interface Repository {  
+    + get()
+  }
+  class Data
+}
+
+Client --> Repository
+Client --> Data
+
+Client -[hidden] Repository
+
+
+package DB {
+  class RepositoryImpl
+}
+
+RepositoryImpl --|> Repository
+RepositoryImpl -> Data
+
+
+Repository -[hidden] RepositoryImpl
+@enduml

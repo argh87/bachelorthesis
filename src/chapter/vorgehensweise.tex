@@ -1,0 +1,173 @@
+\chapter{Analyse und Umsetzung}
+\markboth{Analyse und Umsetzung}{}
+\label{ch:Vorgehensweise}
+
+Bevor analysiert werden kann, welche Bereiche der Transaktionserfassung angepasst werden müssen und nach welchen Prinzipien, wird erst geprüft, wie der aktuelle Zustand ist. Hierbei wird zuerst das Gesamtsystem betrachtet und danach wird auf die Transaktionserfassung eingegangen. 
+
+Die Komponenten wurden in WBS Alarm nicht in einzelne \code{jar}-Dateien gegliedert, sondern virtuell in \code{package}s in Java aufgeteilt. Hierbei sollten viele verschiedene Artefakte vermieden werden, die miteinander in Verbindung gesetzt werden müssen. Diese Entscheidung fiel am Anfang des Projekts, da es sich nicht um eine sehr große Anwendung handeln würde. 
+
+Das System selbst wird als \ac{WAR} erstellt. Für die Schnittstelle zur Webanwendung wurde \textit{Spring Boot} und \textit{Spring Boot Data} als Framework verwendet. Diese Frameworks helfen bei der Verwaltung und Anmeldung von Benutzer*innen und bei Datenzugriff und "=manipulation.
+
+Das System besteht aus sieben verschiedenen Komponenten:
+
+\begin{itemize}
+\item \code{http}: Dies ist die Schnittstelle nach außen. Hier wird die Verwaltung der Daten über eine HTTP Schnittstelle bereitgestellt und dient als Einstiegspunkt der Webanwendung von WBS Alarm. Die Daten werden als Ressourcen bereitgestellt, die über die HTTP-Methoden \textit{GET}, \textit{POST}, \textit{PUT} und \textit{DELETE} manipuliert werden können. Hierbei werden die Ressourcen in \ac{JSON} dargestellt.
+
+\item \code{action}: Die Aktionen sind mit den einzelnen Ressourcen verknüpft und stellen die Usecases der Anwendung dar. Für jede verfügbare HTTP-Methode auf eine Ressource existiert eine Aktion. \textit{GET} ermittelt, \textit{POST} erstellt, \textit{PUT} ändert und \textit{DELETE} löscht Daten und somit Ressourcen.
+
+\item \code{repository}: Diese Komponente abstrahiert die Datenbankschicht. Welche Datenbank hier genau verwendet wird, wird über Abhängigkeiten im Projektmodell von \textit{Maven}\footnote{Maven ist ein Build Management-Tool zum standartisierten Erzeugen von Programmen} gesteuert. 
+
+\item \code{entity}: Hier steht ein Satz von Datenstrukturen zur Verfügung, der die Darstellung in der Datenbank widerspiegelt. Sie sind die Geschäftsobjekte der Anwendung. Über die Komponente \code{repository} kann eine Entität in einer Datenbank abgefragt, persistiert, aktualisiert oder gelöscht werden.
+
+\item \code{core}: Zur Abstraktion der Datenstrukturen aus \code{entity} und denen für den Empfang der Daten über die Komponente \code{http}. Hier wurden für die Strukturen eigene \textit{Interfaces} angelegt, über die mit den eigentlichen Instanzen gearbeitet wird.
+
+\item \code{security}: Diese Komponente ist für die Anmeldung, Registrierung, Änderung und Berechtigung von Benutzern zuständig. Innerhalb der Komponenten gibt es für die verschiedenen Aufgaben weitere Subkomponenten. 
+
+\item \code{service}: Hier befinden sich zwei Hilfsklassen. Eine ist für den Mail-Versand zuständig. Die andere Klasse überprüft die Zugriffsberechtigung mittels Datenbankabfragen eines Benutzers auf einzelne Daten.
+\end{itemize}
+
+Die einzelnen \oge Komponenten wurden nach Kapitel~\ref{sec:Komponentenprinzipien} analysiert. Dabei wurden von den Komponenten die Klassen $N_c$ und die Schnittstellen $N_a$ gezählt und daraus die Abstraktheit $A$ berechnet (\refTab{tab:comp_gesamt}). Für die Instabilität $I$ wurden die ausgehenden $F_o$ und eigehenden $F_i$ Klassen gezählt. Hierfür wurden die \code{import}-Anweisungen von einer Komponente in die andere gezählt. Das bedeutet: In den 97 Module aus der Komponente \code{action} wurden 375 Mal Module aus anderen Komponenten in die Komponente importiert. Dahingegen wurden 44 Mal Module durch andere Komponenten verwendet. 43 Module sind \textit{Interfaces}. Die Zählung von $F_i$ und $F_o$ ist in \refTabns{tab:import_all_fifo} vermerkt.
+
+\begin{table}[]
+\centering
+\caption{Abstraktheit $A$ und Instabilität $I$ der Komponenten über das gesamte System WBS Alarm mit Abstand zur Hauptreihe $D$ im Ausgangszustand.}
+\label{tab:comp_gesamt}
+\begin{tabular}{@{}l|rrr|rrr|r@{}}
+\toprule
+Komponente        & $N_a$ & $N_c$ & $A$    & $F_o$  & $F_i$  & $I$    & $D$  \\ \midrule
+\code{action}     & 43    & 97    & 0,44   & 375    & 44     & 0,89   & 0,34 \\
+\code{core}       & 28    & 39    & 0,72   & 0      & 469    & 0,00   & 0,28 \\
+\code{entity}     & 0     & 12    & 0,00   & 26     & 39     & 0,40   & 0,60 \\
+\code{http}       & 0     & 52    & 0,00   & 181    & 1      & 0,99   & 0,01 \\
+\code{repository} & 11    & 11    & 1,00   & 21     & 61     & 0,26   & 0,26 \\
+\code{security}   & 6     & 31    & 0,19   & 50     & 11     & 0,82   & 0,01 \\
+\code{service}    & 0     & 2     & 0,00   & 7      & 35     & 0,17   & 0,83 \\ 
+\bottomrule
+\end{tabular}
+\end{table}
+
+Der Abhängigkeitsbaum über das gesamte System (\refAbb{fig:package_ist_all}) lässt eine zirkuläre Abhängigkeit zwischen den Komponenten \code{action}, \code{security} und \code{http} erkennen und verstößt somit gegen das \ac{ADP}. An dieser Stelle sollte geprüft werden, inwieweit die drei Komponenten angepasst werden müssten, um einen \ac{DAG} zu erhalten und die Verbindungen zu \code{security} lösen. Dabei muss beachtet werden, dass die Absicherung der Anwendung als Aspekt betrachtet wird, die bei jeder Anfrage an die HTTP-Schnittstelle sichergestellt sein muss. In dieser Arbeit wird der Fokus jedoch primär auf die Transaktionserfassung gelegt.
+
+Bei Betrachtung des gesamten Systems kann ein Verstoß gegen das \ac{SDP} festgestellt werden, da Beziehungen von \code{service} ($I_{service}=0,17$) über \code{repository} ($I_{repository}=0,26$) hin zu \code{entity} ($I_{entity}=0,40$) auf jeweils instabilere Komponenten verweisen. 
+
+\begin{figure}
+  \centering
+  \includegraphics[width=0.6\textwidth]{build/generated-uml/package_ist_all.png}
+   \caption{Komponenten des gesamten Systems im Ausgangszustand. Hier sind bidirektionale Verbindungen zwischen \code{action} und \code{security} zu erkennen. Wird \code{http} hinzugenommen, ist darüber hinaus eine zirkuläre Abhängigkeit zu erkennen.}
+   \label{fig:package_ist_all}
+\end{figure}
+
+Die Untersuchung des gesamten Systems \bzgl der Komponenten gibt Aufschluss darüber, dass auch hier noch Probleme bestehen, die es zu lösen gilt. In dieser Arbeit wird sich aber vorerst auf die Transaktionserfassung beschränkt. 
+
+Bei der Analyse der Komponenten für die Transaktionserfassung wurden die Module innerhalb der Komponenten ermittelt, die direkt damit zu tun haben. Diese Module wurden analog zum gesamten System analysiert (\refTab{tab:comp_transaktion}, \refTabns{tab:import_trans_fifo}). Hierbei entfällt die Komponente \code{security} komplett und es bleiben sechs Komponenten übrig. Durch die Abstraktion der angemeldeten Benutzer*innen in der Komponente \code{core} kann auf \code{security} verzichtet werden. Das Framework \textit{Spring Boot} hilft bei der \ac{DI} in die Schnittstelle in \code{http}.
+
+\begin{table}[]
+\centering
+\caption{Abstraktheit $A$ und Instabilität $I$ der Komponenten über die Transaktionserfassung von WBS Alarm mit Abstand zur Hauptreihe $D$ im Ausgangszustand.}
+\label{tab:comp_transaktion}
+\begin{tabular}{@{}l|rrr|rrr|r@{}}
+\toprule
+Komponente        & $N_a$ & $N_c$ & $A$    & $F_o$  & $F_i$  & $I$    & $D$  \\ \midrule
+\code{action}     & 4     & 16    & 0,25   & 92     & 4      & 0,96   & 0,21 \\
+\code{core}       & 12    & 18    & 0,67   & 0      & 112    & 0,00   & 0,33 \\
+\code{entity}     & 0     & 9     & 0,00   & 23     & 18     & 0,56   & 0,44 \\
+\code{http}       & 0     & 6     & 0,00   & 22     & 0      & 1,00   & 0,00 \\
+\code{repository} & 5     & 5     & 1,00   & 10     & 15     & 0,40   & 0,40 \\
+\code{service}    & 0     & 2     & 0,00   & 7      & 5      & 0,58   & 0,42 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Bei der Erstellung des Abhängigkeitsbaums fällt auf, dass keine zirkulären Abhängigkeiten vorhanden sind (\refAbbns{fig:package_ist_transaktion}). Es handelt sich hierbei um einen \ac{DAG}. 
+
+\begin{figure}
+  \centering
+  \includegraphics[width=0.6\textwidth]{build/generated-uml/package_ist_transaktion.png}
+   \caption{Betreffend der Transaktionserfassung sind diese Komponenten im Ausgangszustand eingebunden.}
+   \label{fig:package_ist_transaktion}
+\end{figure}
+
+Jedoch kann hier ein Problem zwischen \code{repository} und \code{entity} erkannt werden, da gegen das \ac{SDP} verstoßen wird. Eine stabile Komponente zeigt nämlich auf eine instabilere Komponente ($I_{repository}=0,40 \rightarrow I_{entity}=0,56$). 
+
+Betrachtet man \code{repository} nach seiner Aufgabe, sollte sich die Komponente auf der äußersten Schicht befinden, da sie eine Schnittstelle zur Datenbank darstellt (\refAbb{fig:clean_architecture}). Die Betrachtung des Kontrollflusses ergibt, dass infolgedessen von der inneren Schicht \code{action} auf die äußere \code{repository} zugegriffen wird.
+
+Um \code{repository} auf eine höhere Schicht zu übertragen, muss die Abhängigkeit zu \code{action} mittels \ac{DIP} umgekehrt werden. Dabei muss gleichzeitig auf \code{service} geachtet werden. Hierbei kann es sonst zu einer zirkulären Abhängigkeit zwischen den drei Komponenten kommen.
+
+Die Komponente \code{service} beinhaltet zwei verschiedene Klassen \code{AccessService} (\refLst{lst:AccessService}) und \code{MailService} (\refLst{lst:MailService}). Mittels Datenbankabfragen wird geprüft, ob den Anwender*innen Zugriff auf bestimmte Ressourcen gewährt wird. Hier würde sich eine Aufnahme in die Komponente \code{repository} anbieten. Die Klasse \code{MailService} wird nur von \code{action} verwendet. Eine Aufnahme in die Komponente liegt hier nahe, aber durch die Eigenschaft als Schnittstelle zu einem SMPT Server würde sich anbieten eine eigene Komponente für diese Schnittstelle zu erstellen und mittels \ac{DIP} die Abhängigkeit in die richtige Richtung zu lenken. Die Beibehaltung verschiedener Komponenten hat auch zur Folge, dass die Komponenten unabhängig voneinander entwickelt werden können. 
+
+In \refAbbns{fig:package_action_rest} und \refAbbns{fig:package_action_add} ist das aktuelle Klassendiagramm der Komponente \code{action} dargestellt. Hierbei wurde auf die Abhängigkeiten nach außen verzichtet, um die Übersichtlichkeit zu bewahren. Jedes \code{interface} stellt einen Usecase dar, dem eine Ressource zugeordnet ist. Die Ressourcen, die Daten der Transaktionen wiedergeben, sind recht simpel aufgebaut. Hier wird der Zugriff auf die entsprechenden Aktionen und Entitäten geprüft, dann die Daten über \code{repository} ermittelt und der HTTP Schnittstelle zurückgegeben, die in \ac{JSON} umgewandelt werden. Bei der Erfassung einer neuen Transaktion (\refAbb{fig:package_action_add}) muss neben der aufwändigen Validierung nach den Anforderungen aus \refSecns{sec:wbs}, auch die Datenstruktur erstellt und persistiert werden, mit Aktualisierung der Bestände (\refLst{lst:TransaktionValidaton} und \refLstns{lst:TransaktionExecution}). 
+
+\begin{figure}
+  \centering
+  \includegraphics[width=1\textwidth]{build/generated-uml/package_action_rest.png}
+   \caption{Klassenstruktur der Komponente \code{action} \bzgl der Transaktionen.}
+   \label{fig:package_action_rest}
+\end{figure}
+
+\begin{figure}
+  \centering
+  \includegraphics[width=1\textwidth]{build/generated-uml/package_action_add.png}
+   \caption{Klassenstruktur der Komponente \code{action} \bzgl einer einzelnen Erfassung einer Transaktion.}
+   \label{fig:package_action_add}
+\end{figure}
+
+In \refAbbns{fig:package_action_repo_ist} wird gezeigt, wie die Abhängigkeit zwischen der Komponente \code{action} und \code{repository} aufgebaut ist. Um die Abhängigkeit der beiden Komponenten zu drehen, wird wie in \refAbbns{fig:package_action_repo_dip} auf der Seite von \code{action} ein Interface erstellt, über die alle Anfragen an \code{repository} gestellt werden. Auf dessen Seite wird die Schnittstelle implementiert und verweist auf die einzelnen Datenschnittstellen für die jeweiligen Entitäten (\refAbb{fig:package_action_repo_dip}).
+
+Es wurde geprüft, ob gegen das \ac{ISP} verstoßen wird, da verschiedene Klassen die Schnittstelle \code{TransaktionDao} verwenden und somit indirekt voneinander abhängig sind. Um dies zu lösen, müssten für die verschiedenen Module eigene Schnittstellen geschaffen werden. Das Modul \code{TransaktionDaoImpl} würde diese dann implementieren. Dies hat den Vorteil, dass die Module aus \code{action} nicht untereinander abhängig sind, hat aber auch die Erhöhung der Abstraktheit ohne bemerkenswerten Anstieg der Stabilität zur Folge. Damit würde sich der Abstand zur Hauptreihe weiter erhöhen. Hier wurde angenommen, dass für die einzelnen Klassen eigene \textit{Interfaces} erstellt werden. Bei einer Annahme von sieben zusätzlichen Interfaces würde $A_{action}$ auf 0,56 (bei $N_a=14$ und $N_c = 25$) steigen. Durch die neuen Interfaces steigt zugleich auch $F_o$ von \code{action}. Bei der Schnittstelle \code{TransaktionDao} gingen sieben an die Komponente \code{core} und fünf an \code{entity}. Durch eine Aufteilung auf verschiedene \textit{Interfaces} kann davon ausgegangen werden, dass nicht alle Verbindungen pro \textit{Interface} dupliziert werden. Bei einer Annahme von 50\%  würde die Instabilität von \code{action} auf 0,89 sinken (bei $F_o = 117$), aber $D_{action}$ auf 0,45 steigen. Anhand der weiteren Verwendung von \code{entity} durch \code{action} würde $F_i$ auf 36 ansteigen. $I_{entity}$ würde auf 0,39 fallen aber $D_{entity}$ steigt von 0,45 auf 0,61.
+
+\begin{figure}
+  \centering
+  \includegraphics[width=0.5\textwidth]{build/generated-uml/package_action_repo_ist.png}
+   \caption{Am Beispiel der Klasse \code{TransaktionContext} ist die Abhängigkeit von \code{action} zu \code{repository} dargestellt (\refLst{lst:TransaktionContext}).}
+   \label{fig:package_action_repo_ist}
+\end{figure}
+
+\begin{figure}
+  \centering
+  \includegraphics[width=0.7\textwidth]{build/generated-uml/package_action_repo_dip.png}
+   \caption{Umkehrung der Abhängigkeit von \code{action} zu \code{repository}. Hier wurden alle Verweise zur Komponente \code{repository} hingeleitet.}
+   \label{fig:package_action_repo_dip}
+\end{figure}
+
+Der Aufbau der neuen Komponente \code{mail} wird wie in \refAbbns{fig:package_action_mail_dip} umgesetzt. So folgt die Abhängigkeitsrichtung von einer äußeren zu einer inneren Schicht.
+
+\begin{figure}
+  \centering
+  \includegraphics[width=0.32\textwidth]{build/generated-uml/package_action_mail_dip.png}
+   \caption{Herauslösen der Schnittstelle zum E-Mail Versand als eigene Komponente.}
+   \label{fig:package_action_mail_dip}
+\end{figure}
+
+Nach der Umkehrung der Abhängigkeit von \code{action} und \code{repository}, der Auflösung von \code{service} und der Bildung der Komponente \code{mail} hat sich das die Paketstruktur geändert (\refAbb{fig:package_refac_transaktion}). Die Stabilität von \code{repository} hat stark abgenommen, da niemand mehr direkt von dieser Komponente abhängig ist (\refTab{tab:comp_transaktion_refac}). Der Abstand zur Hauptreihe hat gleichzeitig von 0,40 zu 0,86 stark zugenommen. Die Abstraktheit für diese Komponente passt aber nicht zu deren Aufgabe: Durch das Framework \textit{Spring Boot Data} wird der Zugriff auf Daten über ein Interface definiert. Hier können annotierte Methoden verwendet werden, um Daten mittels \ac{JPQL} zu manipulieren (als Beispiel \refLst{lst:TransaktionRepository}). Wenn hier \zb über die Möglichkeiten von Java auf eine Datenbank zugegriffen würde, müsste es sich um voll implementierte Klassen handeln. Die Abstraktheit der Komponente \code{repository} läge dann bei 0,00 was den Abstand zur Hauptreihe auf 0,00 setzen würde.
+
+Durch das Herauslösen der Komponente \code{mail} ergibt sich nur eine Abhängigkeit in Richtung \code{action}. Dadurch ist es möglich diese Komponente leicht herauszutrennen und durch ein anderes Verfahren zu ersetzen (beispielsweise das Versenden von SMS anstelle von E-Mails). 
+
+Nach der Restrukturierung wird das \ac{SDP} eingehalten. Es gibt keine Komponente, die auf eine instabilere Komponente als sich selbst verweist.
+
+\begin{table}[]
+\centering
+\caption{Abstraktheit $A$ und Instabilität $I$ der Komponenten über die Transaktionserfassung von WBS Alarm mit Abstand zur Hauptreihe $D$ nach dem Refactoring der Komponenten \code{repository} und \code{service} mittels \ac{DIP}.}
+\label{tab:comp_transaktion_refac}
+\begin{tabular}{@{}l|rrr|rrr|r@{}}
+\toprule
+Komponente        & $N_a$ & $N_c$ & $A$    & $F_o$  & $F_i$  & $I$    & $D$  \\ \midrule
+\code{action}     & 7     & 18    & 0,39   & 75     & 7      & 0,91   & 0,30 \\
+\code{core}       & 12    & 18    & 0,67   & 0      & 114    & 0,00   & 0,33 \\
+\code{entity}     & 0     & 9     & 0,00   & 23     & 19     & 0,55   & 0,45 \\
+\code{http}       & 0     & 6     & 0,00   & 22     & 0      & 1,00   & 0,00 \\
+\code{repository} & 6     & 7     & 0,86   & 16     & 0      & 1,00   & 0,86 \\
+\code{mail}       & 0     & 1     & 0,00   & 4      & 0      & 1,00   & 0,00 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{figure}
+  \centering
+  \includegraphics[width=0.55\textwidth]{build/generated-uml/package_refac_transaktion.png}
+   \caption{Komponenten nach Umkehrung der Abhängigkeit von \code{action} zu \code{repository} und Auflösung von \code{service}.}
+   \label{fig:package_refac_transaktion}
+\end{figure}
+
+Bei Betrachtung von \refTabns{tab:comp_transaktion_refac} fällt auf, dass $D_{entity}$ am weitesten von der Hauptreihe entfernt ist. Dies hängt damit zusammen, dass die Schnittstellen der Entitäten in der Komponente \code{core} liegen. Wenn diese in die eigenen Komponenten aufgenommen werden, kann $D_{entity}$ auf 0,07 heruntergesetzt werden. Die Schnittstellen sind aber in \code{core} besser aufgehoben. Zum einen würde sich $D_{core}$ auf 0,67 erhöhen, da abstrakte Module verschoben werden, zum anderen jedoch konkrete Module, wie \zb die Exceptions, weiterhin vorhanden bleiben. Die Exceptions müssten daraufhin in die Module verlagert werden, in dem sie geworfen werden. Dadurch würde \code{core} abstrakter und nähert sich so mehr der Hauptreihe. Daraus würden aber weitere ungewollte Beziehungen entstehen. In \code{http} ist ein Exception Handler definiert (\refLst{lst:ExceptionMapper}), der auf bestimmte Ausnahmen reagiert und einen entsprechenden HTTP Status mit entsprechender Meldung an die  Webanwendung von WBS Alarm zurückgibt. Wenn \bspw beim Versenden einer E-Mail oder dem Aufbau der Verbindung zum SMTP Server ein Fehler auftritt, muss dieser abgefangen und verarbeitet werden. Liegen diese Exceptions in der Komponente \code{mail} muss eine Beziehung von \code{http} aufgebaut werden, da die Ausnahmen dort behandelt werden. 
+
+Durch diese Betrachtung fällt auf, dass sich die Anzahl der Module der Komponente \code{core} veringern und sich auf die anderen Komponenten aufteilen lassen. Dies sollte nicht nur für die Transaktionserfassung allein geschehen, sondern bei der Wartung des gesamten Systems in Betracht gezogen werden. Hier könnte schnell der Überblick verloren gehen. Zudem sollte erst die Komponente \code{security} korrigiert werden, um die zirkuläre Abhängigkeit zu lösen und den Abhängigkeitsbaum in \refAbbns{fig:package_ist_all} in einen \ac{DAG} umzuwandeln.

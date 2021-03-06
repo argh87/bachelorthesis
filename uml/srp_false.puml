@@ -1,0 +1,14 @@
+@startuml
+allowmixing
+class DVD {
++ getDetails()
++ save()
+}
+actor "Cineast" as cine
+actor "Admin" as db
+cine --> DVD::getDetails
+db --> DVD::save
+
+cine -[hidden] DVD
+DVD -[hidden] db
+@enduml

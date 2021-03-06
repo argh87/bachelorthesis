@@ -1,0 +1,35 @@
+@startuml
+package View {
+interface Exporter
+  class PdfExporter
+  class CsvExporter
+}
+
+package Controller {
+  interface Collector
+  class Controller
+}
+
+package Business {
+  class MovieCollector
+  interface Repository
+}
+
+package Datenbank{
+  class MovieRepository
+}
+
+Exporter <|.. PdfExporter
+Exporter <|.. CsvExporter
+Collector <|.. MovieCollector
+Repository <|.. MovieRepository
+
+MovieCollector *--> Repository
+MovieCollector -[hidden] Repository
+
+Collector -[hidden] Controller
+Collector <--* Controller
+
+Controller -[hidden] Exporter
+Controller *--> Exporter
+@enduml

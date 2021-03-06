@@ -1,0 +1,10 @@
+digraph L {
+    
+  node [shape=component];
+
+  a  [label="Comp A"];
+  b  [label="Comp B"];
+
+  a -> b -> a [arrowhead="vee"]
+
+}

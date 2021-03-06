@@ -1,0 +1,5 @@
+@startuml
+class PdfExporter
+PdfExporter -> MovieCollector
+MovieCollector -> MovieRepository
+@enduml

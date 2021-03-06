@@ -1,0 +1,21 @@
+# LaTex Output Files #
+######################
+*.bak
+*.pdf
+*.synctex.gz
+*.aux
+*.toc
+*.bbl
+*.blg
+*.out
+*.lof
+*.nav
+*.snm
+*.pdf_tex
+*.lot
+*.lol
+*.locode
+
+# Target Ordner #
+#################
+build

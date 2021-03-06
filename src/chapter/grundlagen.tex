@@ -1,0 +1,57 @@
+\chapter{Grundlagen}
+\markboth{Grundlagen}{}
+\label{ch:Grundlagen}
+
+In diesem Kapitel wird zuerst auf das Projekt WBS Alarm eingegangen und die Anforderungen an die Erfassung der Transaktionen ausführlich beschrieben. Hier soll erläutert werden, welche Gedankengänge hinter den Anforderungen stecken. 
+
+Danach werden zwei Fallstudien vorgestellt, die sich mit dem Kostenwachstum der Entwicklung und Wartung mit fortschreitenden Releases, also Veröffentlichungen eines Softwareprodukts, beschäftigt haben. Hier werden die wichtigsten Erkenntnisse aus den Fallstudien zusammengefasst.
+
+Im Folgenden wird in Kapitel~\ref{sec:Softwarearchitektur} auf einzelne Details einer sauberen Softwarearchitektur eingegangen. In den Kapiteln~\ref{sec:Designprinzipien} und~\ref{sec:Komponentenprinzipien} werden einige Prinzipien für die Entwicklung leicht wart"= und erweiterbarer Software vorgestellt. 
+
+\input{src/chapter/grundlagen/wbsalarm.tex}
+\input{src/chapter/grundlagen/fallstudien.tex}
+
+\section{Saubere Softwarearchitektur}
+\label{sec:Softwarearchitektur}
+
+Das Ziel einer sauberen Softwarearchitektur (\textit{clean architecture}) wird von \citeauth{martin2018} wie folgt beschrieben: \textquote[{\cite[][5]{martin2018}}]{The goal of software architecture is to minimize the human resources required to build and maintain the required system.}.
+
+Aber warum ist die interne Qualität so wichtig, obwohl sie für die Anwender*innen  gar nicht sichtbar ist? \citeauth{fowler2019} vergleicht dabei eine Software die sauber entwickelt wurde, gegen eine, die neben dem eigentlichen Quellcode noch schlecht designten und unnötig komplizierten Quellcode\footnote{dieser wird auch \textit{Cruft} genannt} enthält. Beide haben den gleichen Zweck und stehen hier  in Konkurrenz zueinander. Die Software, die eine hohe interne Qualität aufweist, kann leichter aber anfänglich langsamer um Funktionen erweitert werden (\refAbb{fig:quality_code}). Die Einarbeitung von neuen Entwickler*innen benötigt jedoch weniger Zeit, da der Quelltext zuvor nicht in Gänze verstanden werden muss. 
+Die Software mit geringerer interner Qualität kann zwar in der anfänglichen Phase an Funktionen mithalten und sogar mehr Funktionen anbieten, jedoch wird mit fortschreitender Entwicklung die Implementierung neuer Funktionen schwieriger. Die Erweiterung des Entwicklungsteams wird aufwändiger, da neue Entwickler*innen erst einen Großteil der Quellcodes verstehen müssen um diesen zu erweitern \citep[vgl.][]{fowler2019}.
+
+\begin{figure}
+  \centering
+  \includegraphics[width=1\textwidth]{res/quality_code.jpg}
+   \caption{Erweiterbarkeit von Software mit geringer und hoher interner Qualität über Zeit \citep[][]{fowler2019}.}
+   \label{fig:quality_code}
+\end{figure}
+
+Ansätze für Softwarearchitekturen hat es in den letzten Jahrzehnten einige gegeben. Darunter fallen die 
+Hexagonale Architektur nach Alistair Cockburn (adaptiert von \citeauth{freeman2009}), 
+DCI (\textit{Data, context, interaction}) nach \citeauth{reenskaug2009} und 
+BCE (\textit{Boundary-Control-Entity}) nach \citeauth{jacobson1995}. 
+Alle Varianten unterscheiden sich im Detail voneinander, haben aber die Separierung unterschiedlicher Systemaspekte durch Bildung von Schichten gemein. Alle verfolgen die Ziele testfähig, sowie unabhängig von Frameworks,  der Oberfläche, der Datenbank und sonstigen externen Komponenten zu sein. Die saubere Softwarearchitektur versucht, die bisherigen Konzepte in ein umsetzbares Konzept zu integrieren \citep[][202]{martin2018}. 
+
+In \refAbbns{fig:clean_architecture} lässt sich eine übergreifende Abhängigkeitsregel erkennen, die besagt, dass Abhängigkeiten immer nach innen in Richtung hochrangiger Richtlinien erfolgen. Die inneren Kreise kennen die äußeren Schichten und deren Inhalt nicht. Der Kontrollfluss (\textit{flow of control}) kann aber die Grenze einer inneren zu einer äußere Schicht kreuzen, wenn die zugegriffenen Komponenten entsprechend aufgebaut sind \citep[vgl.][203]{martin2018}.
+
+
+%The overriding rule that makes this architecture work is the Dependency Rule: \textit{Source code dependencies must point only inward, toward higher-level policies}.
+%Nothing in an inner circle can know anything at all about something in an outer circle. In particular, the name of something declared in an outer circle must not be mentioned by the code in an inner circle. That includes functions, classes, variables, or any other named software entity  \citep[vgl.][203]{martin2018}.
+
+\begin{figure}
+  \centering
+  \includegraphics[width=0.9\textwidth]{res/clean_architecture.jpg}
+   \caption{Schichtmodell der sauberen Softwarearchitektur \citep[][203]{martin2018}.}
+   \label{fig:clean_architecture}
+\end{figure}
+
+
+In den nächsten Kapiteln sollen die Design"= und Komponentenprinzipien vorgestellt werden, die eine hohe interne Qualität erreichen sollen, indem sie den  Kontrollfluss und Aufbau der Schichten unterstützen. Danach wird auf Grenzlinien mit ihren Überschreitungen eingegangen, die bei der Strukturierung von Komponenten helfen können und eine höhere Modularität der Software versprechen. 
+
+\input{src/chapter/grundlagen/designprinzipien.tex}
+\input{src/chapter/grundlagen/komponentenprinzipien.tex}
+\input{src/chapter/grundlagen/grenzen.tex}
+
+
+
+

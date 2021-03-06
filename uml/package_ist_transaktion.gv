@@ -1,0 +1,89 @@
+digraph G {
+    
+
+node [shape=plaintext fontname="Sans serif" fontsize="10"];
+
+http [shape=component, label=<
+ <table border="0">
+  <tr>
+    <td colspan="2"><b>http           </b></td>
+  </tr>
+  <tr>
+    <td>&nbsp;</td>
+    <td><i>I=1,00</i></td>
+  </tr>
+</table>
+>]
+action [shape=component, label=<
+ <table border="0">
+  <tr>
+    <td colspan="2"><b>action         </b></td>
+  </tr>
+  <tr>
+    <td>&nbsp;</td>
+    <td><i>I=0,96</i></td>
+  </tr>
+</table>
+>]
+entity [shape=component, label=<
+ <table border="0">
+  <tr>
+    <td colspan="2"><b>entity         </b></td>
+  </tr>
+  <tr>
+    <td>&nbsp;</td>
+    <td><i>I=0,56</i></td>
+  </tr>
+</table>
+>]
+core [shape=component, label=<
+ <table border="0">
+  <tr>
+    <td colspan="2"><b>core           </b></td>
+  </tr>
+  <tr>
+    <td>&nbsp;</td>
+    <td><i>I=0,00</i></td>
+  </tr>
+</table>
+>]
+service [shape=component, label=<
+ <table border="0">
+  <tr>
+    <td colspan="2"><b>service        </b></td>
+  </tr>
+  <tr>
+    <td>&nbsp;</td>
+    <td><i>I=0,58</i></td>
+  </tr>
+</table>
+>]
+repository [shape=component, label=<
+ <table border="0">
+  <tr>
+    <td colspan="2"><b>repository     </b></td>
+  </tr>
+  <tr>
+    <td>&nbsp;</td>
+    <td><i>I=0,40</i></td>
+  </tr>
+</table>
+>]
+
+{rank=same service repository}
+{rank=same http action}
+
+
+ http -> action [arrowhead="vee"];
+ action -> core [arrowhead="vee"];
+ action -> entity [arrowhead="vee"];
+ action -> repository [arrowhead="vee"];
+ action -> service [arrowhead="vee"];
+ repository -> entity [arrowhead="vee"];
+ repository -> core [arrowhead="vee"];
+ service -> core [arrowhead="vee"];
+ service -> repository [arrowhead="vee"];
+ entity -> core [arrowhead="vee"];
+ http -> core [arrowhead="vee"];
+
+}

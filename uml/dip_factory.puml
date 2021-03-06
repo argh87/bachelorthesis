@@ -1,0 +1,22 @@
+@startuml
+package App {
+class Application
+interface Service
+Interface Factory
+}
+package Comp {
+class FactoryImpl
+class ConcreteImpl
+}
+
+Application --> Factory
+Application --> Service
+
+Application -[hidden] Service
+
+Service <|.. ConcreteImpl
+Factory <|.. FactoryImpl
+
+ConcreteImpl <.. FactoryImpl : creates
+
+@enduml

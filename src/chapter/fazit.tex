@@ -1,0 +1,17 @@
+\chapter{Fazit und Ausblick}
+\markboth{Fazit und Ausblick}{}
+\label{ch:Fazit}
+
+Software Design lässt sich nach \citeauth{hoare1981} in zwei verschiedene Arten unterteilen: 
+\textquote[{\cite[][81]{hoare1981}}]{[...] there are two ways of constructing a software design: One way is to make it so simple that
+there are \textit{obviously} no deficiencies and the other way is
+to make it so complicated that there are no \textit{obvious}
+deficiencies.}
+
+Die saubere Softwarearchitektur versucht über seine Abhängigkeitsregel die Komplexität von Systemen so zu verringern, dass es neuen Entwickler*innen einfacher fällt einen Einstieg in die Entwicklung zu finden, leichter um Funktionen zu erweitern und einen Überblick zu behalten.
+
+Um eine saubere Softwarearchitektur umzusetzen, können die Design"= und Komponentenprinzipien eine Orientierung liefern. Jedoch sollte dies nicht, wie in dieser Arbeit, nur auf einem Teilaspekt eines Systems geschehen. Die Transaktionserfassung allein betrachtet orientiert sich nach der Restrukturierung und der Anwendung der Design"= und Komponentenprinzipien mehr am Schichtenmodell. Die äußeren Schichten verweisen immer zu den inneren Schichten, aber niemals umgekehrt. Wird jedoch das Gesamtsystem betrachtet, wurde nun eine weitere bidirektionale Verbindungen aufgebaut, die vorher nicht bestand (\refAbb{fig:package_ist_all}, \code{repository} zeigt nun auch auf \code{action}). Durch eine gesamtheitliche Betrachtung wäre dies wohl vermieden worden.
+
+Aufbauend auf diese Arbeit sollte die Anwendung der sauberen Softwarearchitektur auf das gesamte System stattfinden, indem die Komponente \code{security} überarbeitet wird, seine Abhängigkeiten aufgelöst werden und sie dadurch alleinstehend für sich selbst gemacht wird. Danach muss die angefangene Umkehrung der Abhängigkeit von den Komponenten \code{action} zu \code{repository} vervollständigt werden.
+
+Nach dieser Restrukturierung sollten die Kennzahlen erneut ermittelt und geprüft werden, um das darauf aufbauende Vorgehen zu planen. Die Wartung und Pflege von Software ist ein ständiger Prozess, den es gilt aufrechtzuerhalten. 

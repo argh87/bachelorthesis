@@ -1,0 +1,4 @@
+@startuml
+[GUI] -> [Geschäftsregeln]
+[Geschäftsregeln] <- [DB]
+@enduml
