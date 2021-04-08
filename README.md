@@ -1,6 +1,6 @@
 # LaTeX
 
-Hier finden sich die Sourcen von meiner Bachelorthesis. Um diese zu bauen habe ich ein Skript geschreiben, welche zwei PDFs nach Vorgaaeb der HS Fulda erstellt. Eins personalisiert mit Deckblatt, das andere ohne persönliche Angaben. ```go.sh``` bereitet alles auf.
+Hier finden sich die Sourcen von meiner Bachelorthesis. Um diese zu bauen habe ich ein Skript geschreiben, welche zwei PDFs nach Vorgabe der HS Fulda erstellt. Eins personalisiert mit Deckblatt, das andere ohne persönliche Angaben. ```go.sh``` bereitet alles auf.
 
 # Exposé
 
